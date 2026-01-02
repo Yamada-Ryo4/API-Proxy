@@ -114,9 +114,3 @@ export GCLI_API_BASE="[https://gcli-gateway.yourdomain.com](https://gcli-gateway
 ---
 
 **⭐ 如果这个项目对你有帮助，欢迎点个 Star！**
-
-```
-
-需要我帮你把这些脚本代码也做一下简单的注释规范化吗？
-
-```
