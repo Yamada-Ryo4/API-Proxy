@@ -69,7 +69,7 @@ Google Gemini 的透明管道。
 
 #### A. Gemini 转 OpenAI (`gemini-oai.js`)
 让 Gemini 兼容所有支持 OpenAI 的软件。
-* **原理：** 将 `/v1/chat/completions` 映射到 Google 的 `/v1beta/openai/` 兼容端点。
+* **原理：** 将 `/v1/chat/completions` 映射至 Google 的 `/v1beta/openai/` 兼容端点。
 * **配置：**
   * **Base URL:** `https://your-domain.com/v1`
   * **API Key:** 填写 **Google Gemini API Key**。
@@ -80,7 +80,7 @@ Google Gemini 的透明管道。
 * **原理：** 深度转换 JSON 结构 (`messages` ↔ `contents`)，支持 System Prompt 提取。
 * **⚠️ 注意：**
   1. **API Key:** 在客户端的 Claude Key 输入框中，填写 **Google Gemini Key**。
-  2. **Model:** 必须手动输入 Gemini 模型名 (如 `gemini-2.5-pro`)，不可选择 `claude-sonnet-4.5`。
+  2. **Model:** 必须手动输入 Gemini 模型名 (如 `gemini-2.5-pro`)，不可选择 `claude-sonnet4.5`。
   3. **流式：** 建议优先使用**非流式模式**以获得最佳稳定性。
 
 ---
@@ -90,7 +90,25 @@ Google Gemini 的透明管道。
 *此部分适用于使用 [su-kaka/gcli2api](https://github.com/su-kaka/gcli2api) 项目的高级用户。*
 
 ### GCLI 路由网关 (`gcli2api.js` & `gcli2api-claude.js`)
+
 作为“网络跳板”帮助本地后端穿透网络，并深度清洗 Cloudflare 特征头以降低风控风险。支持普通 HTTP 路由及 Claude 协议的特殊适配。
+
+**核心路由映射配置 (UPSTREAM_MAP)：**
+脚本内置了以下路由规则，将特定路径前缀映射至真实的 Google 域名：
+
+```javascript
+// === 配置表 ===
+// key: URL前缀 (必须以/开头)
+// value: 目标真实域名
+const UPSTREAM_MAP = {
+  '/codeassist':      'cloudcode-pa.googleapis.com',           // Code Assist
+  '/oauth':           'oauth2.googleapis.com',                 // OAuth2
+  '/googleapis':      'www.googleapis.com',                    // Google APIs
+  '/resourcemanager': 'cloudresourcemanager.googleapis.com',   // Resource Manager
+  '/serviceusage':    'serviceusage.googleapis.com',           // Service Usage
+  '/antigravity':     'daily-cloudcode-pa.sandbox.googleapis.com' // Antigravity (Sandbox)
+};
+```
 
 ---
 
@@ -109,3 +127,4 @@ Google Gemini 的透明管道。
 ---
 
 **⭐ 如果这个项目对你有帮助，欢迎点个 Star！**
+```
