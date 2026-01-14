@@ -1,10 +1,12 @@
-# 🌐 API-Proxy (Cloudflare Workers 版)
+# 🌐 AI-Proxy (Cloudflare Workers 版)
 
 [![Cloudflare Workers](https://img.shields.io/badge/Platform-Cloudflare_Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![OpenAI](https://img.shields.io/badge/AI-OpenAI-412991?logo=openai&logoColor=white)](https://openai.com/)
+[![Anthropic](https://img.shields.io/badge/AI-Claude-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
 [![Gemini](https://img.shields.io/badge/AI-Google_Gemini-8E75B2?logo=googlegemini&logoColor=white)](https://aistudio.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-本项目提供了一套**零成本、高性能**的 API 代理解决方案，专为解决中国大陆直连 Google Gemini API 的网络限制而设计。利用 Cloudflare 全球边缘节点，实现极速响应与稳定连接。
+本项目提供了一套**零成本、高性能**的 AI API 代理与协议转换解决方案。利用 Cloudflare 全球边缘节点，实现对 OpenAI、Claude、Gemini 等主流模型接口的**无障碍访问**、**协议转换**及**隐私清洗**。
 
 ---
 
@@ -24,54 +26,62 @@
 
 请根据您的具体使用场景，在 `/scripts` 目录下选择对应的代码进行部署：
 
-| 脚本文件 | 核心功能 | 适用场景 / 客户端 | 复杂度 |
+| 脚本文件 | 类型 | 核心功能 | 适用场景 / 客户端 |
 | :--- | :--- | :--- | :--- |
-| `gemini-official.js` | 🛡️ **官方直连代理** | 官方 SDK、Web 应用、WebSocket (Live API) | ⭐️ |
-| `gemini-oai.js` | 🔄 **OpenAI 格式转换** | NextChat, LobeChat, 沉浸式翻译等 | ⭐️ |
-| `gcli2api.js` | 🌉 **GCLI 路由网关** | 配合 `su-kaka/gcli2api` 后端使用 | ⭐️⭐️ |
-| `gcli2api-claude.js` | 🔌 **Claude 协议适配** | 让 `claude-code` 等工具调用 Google 模型 | ⭐️⭐️ |
+| `openai.js` | 🛡️ **直连代理** | **OpenAI 全功能代理** (含 WebSocket) | 官方 SDK, Realtime API, Cursor |
+| `claude.js` | 🛡️ **直连代理** | **Claude 官方代理** (含 CORS 修复) | Anthropic SDK, Claude Web |
+| `gemini-official.js` | 🛡️ **直连代理** | **Gemini 官方代理** | Google SDK, Multimodal Live API |
+| `gemini-oai.js` | 🔄 **协议转换** | **Gemini 转 OpenAI 协议** | NextChat, LobeChat, 沉浸式翻译 |
+| `gemini-claude.js` | 🔄 **协议转换** | **Gemini 转 Claude 协议** | 仅支持 Claude 协议的工具 (如 Cursor 特定模式) |
+| `gcli2api.js` | 🌉 **GCLI 网关** | **GCLI 路由网关** | 配合 `su-kaka/gcli2api` 后端 |
 
 ---
 
 ## 🚀 核心功能详解
 
-### 1. 官方接口直连 (`gemini-official.js`)
+### 1. 🌐 通用官方直连代理 (Universal Proxies)
 
-最纯粹的透明代理，忠实转发所有请求，支持最新的 WebSocket 实时协议。
+这一类脚本提供**纯粹的透传服务**。它们不修改数据格式，仅处理网络连通性、跨域头 (CORS) 和隐私头清洗。
 
-* **✅ 适用场景：**
-    * 开发使用 Google 官方 SDK (Python/Node.js) 的应用。
-    * 体验 Gemini live 的 **Multimodal Live API** (实时语音/视频)。
-* **🛠️ 部署步骤：**
-    1. 在 Cloudflare 创建 Worker，粘贴脚本代码。
-    2. **必须** 绑定自定义域名。
-* **💻 使用方式：**
-    将 API 基地址从 `generativelanguage.googleapis.com` 替换为您的自定义域名。
+#### A. OpenAI Proxy (`openai.js`)
+支持所有 OpenAI 接口，包括最新的 **Realtime API (WebSocket)**。
+* **特性：** 完美支持流式输出 (SSE) 和语音实时对话。
+* **客户端配置：**
+  * Base URL: `https://your-domain.com/v1`
+  * API Key: `sk-proj-...` (OpenAI 官方 Key)
 
-```javascript
-// 示例：Node.js SDK 配置
-const genAI = new GoogleGenerativeAI(API_KEY, {
-    baseUrl: "[https://api.yourdomain.com](https://api.yourdomain.com)" 
-});
+#### B. Claude Proxy (`claude.js`)
+专为 Anthropic Claude 设计，修复了浏览器端调用的 CORS 问题。
+* **特性：** 自动处理 `x-api-key` 和 `anthropic-version` 头。
+* **客户端配置：**
+  * Base URL: `https://your-domain.com` (部分客户端需加 `/v1`)
+  * API Key: `sk-ant-...` (Anthropic 官方 Key)
 
-```
+#### C. Gemini Official Proxy (`gemini-official.js`)
+Google Gemini 的透明管道。
+* **特性：** 支持 Python/Node.js 官方 SDK 及 Multimodal Live API。
 
-### 2. OpenAI 兼容模式 (`gemini-oai.js`)
+---
 
-专为不支持 Google 原生格式，仅支持标准 OpenAI 格式 (`/v1/chat/completions`) 的软件设计。
+### 2. 🔄 协议转换适配器 (Protocol Adapters)
 
-* **✅ 适用场景：** 沉浸式翻译、ChatGPT-Next-Web、LobeChat。
-* **⚙️ 核心逻辑：**
-* **路径重写：** 自动将 `v1/chat/completions` 映射至 Google 的 `v1beta` 路径。
-* **CORS 优化：** 完整处理跨域预检，支持浏览器环境直接调用。
+这一类脚本让**一种模型伪装成另一种模型**，解决客户端兼容性问题。
 
+#### A. Gemini 转 OpenAI (`gemini-oai.js`)
+让 Gemini 兼容所有支持 OpenAI 的软件。
+* **原理：** 将 `/v1/chat/completions` 映射到 Google 的 `/v1beta/openai/` 兼容端点。
+* **配置：**
+  * **Base URL:** `https://your-domain.com/v1`
+  * **API Key:** 填写 **Google Gemini API Key**。
+  * **Model:** 填写 Gemini 模型名 (如 `gemini-2.5-flash`)。
 
-* **💻 客户端配置：**
-* **Base URL:** `https://api.yourdomain.com/v1` (⚠️ 注意末尾需加 `/v1`)
-* **API Key:** 填写您的 Google AI Studio API Key。
-* **Model:** 填写 Google 模型 ID（如 `gemini-2.5-pro`, `gemini-3-flash-preview`）。
-
-
+#### B. Gemini 转 Claude (`gemini-claude.js`)
+让 Gemini 伪装成 Claude，供仅支持 Claude 协议的工具使用。
+* **原理：** 深度转换 JSON 结构 (`messages` ↔ `contents`)，支持 System Prompt 提取。
+* **⚠️ 注意：**
+  1. **API Key:** 在客户端的 Claude Key 输入框中，填写 **Google Gemini Key**。
+  2. **Model:** 必须手动输入 Gemini 模型名 (如 `gemini-2.5-pro`)，不可选择 `claude-sonnet-4.5`。
+  3. **流式：** 建议优先使用**非流式模式**以获得最佳稳定性。
 
 ---
 
@@ -79,23 +89,8 @@ const genAI = new GoogleGenerativeAI(API_KEY, {
 
 *此部分适用于使用 [su-kaka/gcli2api](https://github.com/su-kaka/gcli2api) 项目的高级用户。*
 
-### 3. GCLI 路由网关 (`gcli2api.js`)
-
-作为“网络跳板”帮助本地后端穿透网络，并深度清洗 Cloudflare 特征头以降低风控风险。
-
-* **配置方式：**
-```bash
-export GCLI_API_BASE="[https://gcli-gateway.yourdomain.com](https://gcli-gateway.yourdomain.com)"
-
-```
-
-
-
-### 4. Claude 协议适配器 (`gcli2api-claude.js`)
-
-让仅支持 Claude 协议的客户端（如 `claude-code` 命令行工具）通过 gcli2api 调用 Google 模型。
-
-* **特性：** 支持 `/v1/models` 拦截伪造及 SSE 流式响应转换。
+### GCLI 路由网关 (`gcli2api.js` & `gcli2api-claude.js`)
+作为“网络跳板”帮助本地后端穿透网络，并深度清洗 Cloudflare 特征头以降低风控风险。支持普通 HTTP 路由及 Claude 协议的特殊适配。
 
 ---
 
@@ -104,12 +99,12 @@ export GCLI_API_BASE="[https://gcli-gateway.yourdomain.com](https://gcli-gateway
 本项目致力于保护您的数据安全：
 
 * **特征清洗：** 自动移除 `Cf-Connecting-Ip`、`X-Forwarded-For`、`Cf-Ray` 等可能泄露原始 IP 的 Header。
-* **身份伪装：** 强制重写 `Host` 和 `Origin`，模拟合法直连请求。
+* **身份伪装：** 强制重写 `Host` 和 `Origin`，通过官方 API 的安全校验。
 * **零日志：** 脚本运行在无状态的 Serverless 环境，**不存储**任何用户数据或 API Key。
 
 ## ⚠️ 免责声明
 
-本项目仅供技术研究和学习使用，请勿用于非法用途。使用本服务时请严格遵守 Google Cloud Platform 及 Cloudflare 的服务条款。
+本项目仅供技术研究和学习使用，请勿用于非法用途。使用本服务时请严格遵守 OpenAI、Anthropic、Google 及 Cloudflare 的服务条款。
 
 ---
 
